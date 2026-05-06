@@ -798,6 +798,19 @@ tracker_index_root_remove_directory (TrackerIndexRoot *root,
 	GList *l = root->pending_dirs->head, *next;
 	GFile *file;
 
+	while (l) {
+		file = l->data;
+		next = l->next;
+
+		if (g_file_equal (file, directory) ||
+		    g_file_has_prefix (file, directory)) {
+			g_object_unref (file);
+			g_queue_delete_link (root->pending_dirs, l);
+		}
+
+		l = next;
+	}
+
 	if (root->enumerator && root->current_dir &&
 	    (g_file_equal (root->current_dir, directory) ||
 	     g_file_has_prefix (root->current_dir, directory))) {
@@ -813,19 +826,6 @@ tracker_index_root_remove_directory (TrackerIndexRoot *root,
 
 		if (!check_high_water (root->notifier))
 			tracker_index_root_continue (root);
-	}
-
-	while (l) {
-		file = l->data;
-		next = l->next;
-
-		if (g_file_equal (file, directory) ||
-		    g_file_has_prefix (file, directory)) {
-			g_queue_remove (root->pending_dirs, file);
-			g_object_unref (file);
-		}
-
-		l = next;
 	}
 }
 
