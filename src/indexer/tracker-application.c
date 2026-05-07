@@ -144,7 +144,7 @@ struct _TrackerApplication
 
 G_DEFINE_TYPE (TrackerApplication, tracker_application, G_TYPE_APPLICATION)
 
-gpointer
+static gpointer
 endpoint_thread_func (gpointer user_data)
 {
 	IndexerInstance *instance = user_data;
