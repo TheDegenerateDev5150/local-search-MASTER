@@ -241,20 +241,11 @@ finish_endpoint_thread (EndpointThreadData *endpoint_thread_data)
 static GFile *
 get_cache_dir (void)
 {
-	GFile *cache;
+	g_autofree char *cache_dir = NULL;
 
-	if (MINER_FS_CACHE_LOCATION[0] == G_DIR_SEPARATOR) {
-		cache = g_file_new_for_path (MINER_FS_CACHE_LOCATION);
-	} else {
-		g_autofree char *cache_dir = NULL;
+	cache_dir = tracker_get_cache_dir ();
 
-		cache_dir = g_build_filename (g_get_user_cache_dir (),
-		                              MINER_FS_CACHE_LOCATION,
-		                              "files", NULL);
-		cache = g_file_new_for_path (cache_dir);
-	}
-
-	return cache;
+	return g_file_new_for_path (cache_dir);
 }
 
 static gboolean
