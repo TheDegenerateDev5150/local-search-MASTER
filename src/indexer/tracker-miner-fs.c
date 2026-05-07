@@ -87,6 +87,7 @@ struct _TrackerMinerFSPrivate {
 	TrackerMonitor *monitor;
 	TrackerIndexingTree *indexing_tree;
 	TrackerFileNotifier *file_notifier;
+	TrackerErrorReport *error_reports;
 
 	/* Root for relative URIs */
 	GFile *root;
@@ -144,6 +145,7 @@ enum {
 	PROP_INDEXING_TREE,
 	PROP_MONITOR,
 	PROP_ROOT,
+	PROP_ERROR_REPORTS,
 	PROP_ACTIVE,
 	N_PROPS,
 };
@@ -260,6 +262,12 @@ tracker_miner_fs_class_init (TrackerMinerFSClass *klass)
 	props[PROP_ROOT] =
 		g_param_spec_object ("root", NULL, NULL,
 		                     G_TYPE_FILE,
+		                     G_PARAM_WRITABLE |
+		                     G_PARAM_CONSTRUCT_ONLY |
+		                     G_PARAM_STATIC_STRINGS);
+	props[PROP_ERROR_REPORTS] =
+		g_param_spec_object ("error-reports", NULL, NULL,
+		                     TRACKER_TYPE_ERROR_REPORT,
 		                     G_PARAM_WRITABLE |
 		                     G_PARAM_CONSTRUCT_ONLY |
 		                     G_PARAM_STATIC_STRINGS);
@@ -462,6 +470,7 @@ fs_finalize (GObject *object)
 	g_clear_object (&priv->indexing_tree);
 	g_clear_object (&priv->file_notifier);
 	g_clear_object (&priv->monitor);
+	g_clear_object (&priv->error_reports);
 
 	G_OBJECT_CLASS (tracker_miner_fs_parent_class)->finalize (object);
 }
@@ -551,6 +560,9 @@ fs_set_property (GObject      *object,
 		break;
 	case PROP_ROOT:
 		priv->root = g_value_dup_object (value);
+		break;
+	case PROP_ERROR_REPORTS:
+		priv->error_reports = g_value_dup_object (value);
 		break;
 	case PROP_ACTIVE:
 		priv->active = g_value_get_boolean (value);
@@ -731,17 +743,23 @@ sparql_buffer_flush_cb (GObject      *object,
 		}
 	}
 
-	for (i = 0; i < tasks->len; i++) {
-		task = g_ptr_array_index (tasks, i);
-		task_file = tracker_task_get_file (task);
+	if (priv->error_reports) {
+		for (i = 0; i < tasks->len; i++) {
+			task = g_ptr_array_index (tasks, i);
+			task_file = tracker_task_get_file (task);
 
-		if (error) {
-			g_autofree char *sparql = NULL;
+			if (error) {
+				g_autofree char *sparql = NULL;
 
-			sparql = tracker_sparql_task_get_sparql (task);
-			tracker_error_report (task_file, error->message, sparql);
-		} else {
-			tracker_error_report_delete (task_file);
+				sparql = tracker_sparql_task_get_sparql (task);
+				tracker_error_report_save (priv->error_reports,
+				                           task_file,
+				                           error->message,
+				                           sparql);
+			} else {
+				tracker_error_report_delete (priv->error_reports,
+				                             task_file);
+			}
 		}
 	}
 
@@ -1542,4 +1560,13 @@ tracker_miner_fs_get_file_resource_uri (TrackerMinerFS *fs,
 
 	return tracker_file_notifier_get_file_resource_uri (priv->file_notifier,
 	                                                    file);
+}
+
+TrackerErrorReport *
+tracker_miner_fs_get_error_reports (TrackerMinerFS *fs)
+{
+	TrackerMinerFSPrivate *priv =
+		tracker_miner_fs_get_instance_private (fs);
+
+	return priv->error_reports;
 }

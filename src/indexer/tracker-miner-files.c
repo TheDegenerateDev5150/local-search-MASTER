@@ -199,10 +199,14 @@ on_extractor_file_error (TrackerExtractWatchdog *watchdog,
                          const char             *extra,
                          TrackerMinerFiles      *mf)
 {
+	TrackerErrorReport *error_reports;
 	g_autoptr (GFile) file = NULL;
 
-	file = g_file_new_for_uri (uri);
-	tracker_error_report (file, msg, extra);
+	error_reports = tracker_miner_fs_get_error_reports (TRACKER_MINER_FS (mf));
+	if (error_reports) {
+		file = g_file_new_for_uri (uri);
+		tracker_error_report_save (error_reports, file, msg, extra);
+	}
 }
 
 static gboolean
@@ -653,6 +657,7 @@ TrackerMiner *
 tracker_miner_files_new (TrackerSparqlConnection  *connection,
                          TrackerIndexingTree      *indexing_tree,
                          TrackerMonitor           *monitor,
+                         TrackerErrorReport       *error_reports,
                          GFile                    *root)
 {
 	g_return_val_if_fail (TRACKER_IS_SPARQL_CONNECTION (connection), NULL);
@@ -661,6 +666,7 @@ tracker_miner_files_new (TrackerSparqlConnection  *connection,
 	                     "connection", connection,
 	                     "indexing-tree", indexing_tree,
 	                     "monitor", monitor,
+	                     "error-reports", error_reports,
 	                     "root", root,
 	                     NULL);
 }
