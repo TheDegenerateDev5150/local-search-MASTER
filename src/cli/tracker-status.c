@@ -391,11 +391,6 @@ print_errors (GList *keyfiles)
 		path = g_file_get_path (file);
 		g_free (uri);
 
-		if (!g_file_query_exists (file, NULL)) {
-			tracker_error_report_delete (file);
-			continue;
-		}
-
 		message = g_key_file_get_string (keyfile, GROUP, KEY_MESSAGE, NULL);
 
 		str1 = tracker_term_ellipsize (path, col_len[0], TRACKER_ELLIPSIZE_START);
