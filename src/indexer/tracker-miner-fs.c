@@ -267,7 +267,6 @@ tracker_miner_fs_class_init (TrackerMinerFSClass *klass)
 		g_param_spec_boolean ("active", NULL, NULL,
 		                      FALSE,
 		                      G_PARAM_READWRITE |
-		                      G_PARAM_EXPLICIT_NOTIFY |
 		                      G_PARAM_STATIC_STRINGS);
 
 	g_object_class_install_properties (object_class, N_PROPS, props);
