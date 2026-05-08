@@ -26,6 +26,7 @@ import dataclasses
 import pathlib
 import subprocess
 import os
+import sys
 
 import configuration
 import fixtures
@@ -55,9 +56,18 @@ class TestCli(fixtures.TrackerCommandLineTestCase):
         target = pathlib.Path(os.path.join(self.indexed_dir, "png-photo-1.png"))
         target2 = pathlib.Path(os.path.join(self.indexed_dir, "png-photo-1.jpeg"))
 
-        with self.await_photo_inserted(target):
+        with self.await_file_indexed(target2):
             shutil.copy(file, target2)
+        with self.await_photo_inserted(target):
             shutil.copy(file, target)
+
+        # Wait for the two failures to be recorded
+        finished = False
+        n_tries = 0
+        while not finished and n_tries < 10:
+            output = self.run_cli(["localsearch", "status"])
+            finished = "1 recorded" in output
+            n_tries = n_tries + 1
 
         # Check for the file with wrong extension
         output = self.run_cli(["localsearch", "status"])
@@ -85,10 +95,20 @@ class TestCli(fixtures.TrackerCommandLineTestCase):
         bad_copy = pathlib.Path(os.path.join(self.indexed_dir, "png-photo-1.jpeg"))
         bad_copy2 = pathlib.Path(os.path.join(self.indexed_dir, "png-photo-2.jpeg"))
 
-        with self.await_photo_inserted(target):
+        with self.await_file_indexed(bad_copy):
             shutil.copy(file, bad_copy)
+        with self.await_file_indexed(bad_copy2):
             shutil.copy(file, bad_copy2)
+        with self.await_photo_inserted(target):
             shutil.copy(file, target)
+
+        # Wait for the two failures to be recorded
+        finished = False
+        n_tries = 0
+        while not finished and n_tries < 10:
+            output = self.run_cli(["localsearch", "status"])
+            finished = "2 recorded" in output
+            n_tries = n_tries + 1
 
         # Check for a file with wrong extension
         output = self.run_cli(["localsearch", "status", "photo-1"])

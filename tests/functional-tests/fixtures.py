@@ -248,6 +248,17 @@ class TrackerMinerTest(DBusTestCase):
             PICTURES_GRAPH, "; ".join(expected), timeout=cfg.AWAIT_TIMEOUT
         )
 
+    def await_file_indexed(self, path):
+        url = self.uri(path)
+
+        expected = [
+            "tracker:extractorHash ?h",
+            f"nie:url <{url}>",
+        ]
+        return self.tracker.await_insert(
+            FILESYSTEM_GRAPH, "; ".join(expected), timeout=cfg.AWAIT_TIMEOUT
+        )
+
 
 class TrackerMinerFTSTest(TrackerMinerTest):
     """
