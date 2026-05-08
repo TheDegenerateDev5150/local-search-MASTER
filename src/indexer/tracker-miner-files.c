@@ -192,6 +192,19 @@ on_extractor_status (TrackerExtractWatchdog *watchdog,
 	}
 }
 
+static void
+on_extractor_file_error (TrackerExtractWatchdog *watchdog,
+                         const char             *uri,
+                         const char             *msg,
+                         const char             *extra,
+                         TrackerMinerFiles      *mf)
+{
+	g_autoptr (GFile) file = NULL;
+
+	file = g_file_new_for_uri (uri);
+	tracker_error_report (file, msg, extra);
+}
+
 static gboolean
 retry_after_disk_full_cb (gpointer user_data)
 {
@@ -632,6 +645,8 @@ miner_files_constructed (GObject *object)
 	                  G_CALLBACK (on_extractor_lost), mf);
 	g_signal_connect (mf->private->extract_watchdog, "status",
 	                  G_CALLBACK (on_extractor_status), mf);
+	g_signal_connect (mf->private->extract_watchdog, "error",
+	                  G_CALLBACK (on_extractor_file_error), mf);
 }
 
 TrackerMiner *
