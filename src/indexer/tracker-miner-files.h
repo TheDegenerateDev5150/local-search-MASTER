@@ -24,6 +24,7 @@
 
 #include "tracker-config.h"
 
+#include "tracker-error-report.h"
 #include "tracker-miner-fs.h"
 #include "tracker-monitor.h"
 #include "tracker-storage.h"

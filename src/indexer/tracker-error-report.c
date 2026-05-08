@@ -24,6 +24,7 @@
 #include <glib/gstdio.h>
 #include <errno.h>
 
+#include "tracker-common.h"
 #include "tracker-utils.h"
 
 #define GROUP "Report"
