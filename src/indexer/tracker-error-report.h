@@ -24,11 +24,20 @@
 
 #include <gio/gio.h>
 
-void tracker_error_report_init (GFile *cache_dir);
+#define TRACKER_TYPE_ERROR_REPORT (tracker_error_report_get_type ())
+G_DECLARE_FINAL_TYPE (TrackerErrorReport,
+                      tracker_error_report,
+                      TRACKER, ERROR_REPORT,
+                      GObject)
 
-void tracker_error_report (GFile       *file,
-                           const gchar *error_message,
-                           const gchar *sparql);
-void tracker_error_report_delete (GFile *file);
+TrackerErrorReport * tracker_error_report_new (GError **error);
+
+void tracker_error_report_save (TrackerErrorReport *errors,
+                                GFile              *file,
+                                const gchar        *error_message,
+                                const gchar        *sparql);
+
+void tracker_error_report_delete (TrackerErrorReport *errors,
+                                  GFile              *file);
 
 #endif /* __TRACKER_ERROR_REPORT_H__ */

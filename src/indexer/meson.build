@@ -21,6 +21,7 @@ indexer_dbus_sources = gnome.gdbus_codegen(
 )
 
 private_sources = [
+    'tracker-error-report.c',
     'tracker-file-notifier.c',
     'tracker-files-interface.c',
     'tracker-indexing-tree.c',

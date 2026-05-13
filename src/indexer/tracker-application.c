@@ -144,7 +144,7 @@ struct _TrackerApplication
 
 G_DEFINE_TYPE (TrackerApplication, tracker_application, G_TYPE_APPLICATION)
 
-gpointer
+static gpointer
 endpoint_thread_func (gpointer user_data)
 {
 	IndexerInstance *instance = user_data;
@@ -241,20 +241,11 @@ finish_endpoint_thread (EndpointThreadData *endpoint_thread_data)
 static GFile *
 get_cache_dir (void)
 {
-	GFile *cache;
+	g_autofree char *cache_dir = NULL;
 
-	if (MINER_FS_CACHE_LOCATION[0] == G_DIR_SEPARATOR) {
-		cache = g_file_new_for_path (MINER_FS_CACHE_LOCATION);
-	} else {
-		g_autofree char *cache_dir = NULL;
+	cache_dir = tracker_get_cache_dir ();
 
-		cache_dir = g_build_filename (g_get_user_cache_dir (),
-		                              MINER_FS_CACHE_LOCATION,
-		                              "files", NULL);
-		cache = g_file_new_for_path (cache_dir);
-	}
-
-	return cache;
+	return g_file_new_for_path (cache_dir);
 }
 
 static gboolean
@@ -772,11 +763,15 @@ initialize_main_instance (TrackerApplication  *app,
                           GDBusConnection     *dbus_conn,
                           GError             **error)
 {
+	g_autoptr (TrackerErrorReport) error_reports = NULL;
 	g_autoptr (GFile) store = NULL;
 
 	if (!app->dry_run) {
+		error_reports = tracker_error_report_new (error);
+		if (!error_reports)
+			return FALSE;
+
 		store = get_cache_dir ();
-		tracker_error_report_init (store);
 	}
 
 	instance->app = app;
@@ -790,6 +785,7 @@ initialize_main_instance (TrackerApplication  *app,
 		instance->indexer = tracker_miner_files_new (instance->sparql_conn,
 		                                             instance->indexing_tree,
 		                                             app->monitor,
+		                                             error_reports,
 		                                             NULL);
 	}
 
@@ -855,6 +851,7 @@ indexer_instance_new_for_mountpoint (TrackerApplication  *app,
                                      GError             **error)
 {
 	g_autoptr (GFile) store = NULL;
+	g_autoptr (TrackerErrorReport) error_reports = NULL;
 	IndexerInstance *instance;
 
 	instance = g_new0 (IndexerInstance, 1);
@@ -863,6 +860,10 @@ indexer_instance_new_for_mountpoint (TrackerApplication  *app,
 	instance->controller = app->controller;
 
 	if (!app->dry_run) {
+		error_reports = tracker_error_report_new (error);
+		if (!error_reports)
+			goto error;
+
 		store = g_file_get_child (mount_point, ".localsearch3");
 
 		if (g_mkdir_with_parents (g_file_peek_path (store), 0755) < 0) {
@@ -885,6 +886,7 @@ indexer_instance_new_for_mountpoint (TrackerApplication  *app,
 		instance->indexer = tracker_miner_files_new (instance->sparql_conn,
 		                                             instance->indexing_tree,
 		                                             app->monitor,
+		                                             error_reports,
 		                                             instance->root);
 	}
 

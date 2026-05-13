@@ -24,6 +24,7 @@
 
 #include "tracker-config.h"
 
+#include "tracker-error-report.h"
 #include "tracker-miner-fs.h"
 #include "tracker-monitor.h"
 #include "tracker-storage.h"
@@ -36,6 +37,7 @@ G_DECLARE_FINAL_TYPE (TrackerMinerFiles, tracker_miner_files, TRACKER, MINER_FIL
 TrackerMiner * tracker_miner_files_new (TrackerSparqlConnection *connection,
                                         TrackerIndexingTree     *indexing_tree,
                                         TrackerMonitor          *monitor,
+                                        TrackerErrorReport      *error_reports,
                                         GFile                   *root);
 
 G_END_DECLS

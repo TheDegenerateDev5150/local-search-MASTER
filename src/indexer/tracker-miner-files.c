@@ -192,6 +192,23 @@ on_extractor_status (TrackerExtractWatchdog *watchdog,
 	}
 }
 
+static void
+on_extractor_file_error (TrackerExtractWatchdog *watchdog,
+                         const char             *uri,
+                         const char             *msg,
+                         const char             *extra,
+                         TrackerMinerFiles      *mf)
+{
+	TrackerErrorReport *error_reports;
+	g_autoptr (GFile) file = NULL;
+
+	error_reports = tracker_miner_fs_get_error_reports (TRACKER_MINER_FS (mf));
+	if (error_reports) {
+		file = g_file_new_for_uri (uri);
+		tracker_error_report_save (error_reports, file, msg, extra);
+	}
+}
+
 static gboolean
 retry_after_disk_full_cb (gpointer user_data)
 {
@@ -632,12 +649,15 @@ miner_files_constructed (GObject *object)
 	                  G_CALLBACK (on_extractor_lost), mf);
 	g_signal_connect (mf->private->extract_watchdog, "status",
 	                  G_CALLBACK (on_extractor_status), mf);
+	g_signal_connect (mf->private->extract_watchdog, "error",
+	                  G_CALLBACK (on_extractor_file_error), mf);
 }
 
 TrackerMiner *
 tracker_miner_files_new (TrackerSparqlConnection  *connection,
                          TrackerIndexingTree      *indexing_tree,
                          TrackerMonitor           *monitor,
+                         TrackerErrorReport       *error_reports,
                          GFile                    *root)
 {
 	g_return_val_if_fail (TRACKER_IS_SPARQL_CONNECTION (connection), NULL);
@@ -646,6 +666,7 @@ tracker_miner_files_new (TrackerSparqlConnection  *connection,
 	                     "connection", connection,
 	                     "indexing-tree", indexing_tree,
 	                     "monitor", monitor,
+	                     "error-reports", error_reports,
 	                     "root", root,
 	                     NULL);
 }

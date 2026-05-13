@@ -23,6 +23,7 @@
 
 #include <glib.h>
 #include <glib/gi18n.h>
+#include <glib/gstdio.h>
 #include <gio/gio.h>
 
 #include "tracker-cli-utils.h"
@@ -52,6 +53,22 @@ sort_by_date (gconstpointer a,
 	return 0;
 }
 
+static gboolean
+validate_keyfile (GKeyFile *keyfile)
+{
+	g_autofree char *uri = NULL;
+	g_autoptr (GFile) file = NULL;
+	gboolean valid = FALSE;
+
+	uri = g_key_file_get_string (keyfile, "Report", "Uri", NULL);
+
+	if (uri) {
+		file = g_file_new_for_uri (uri);
+		valid = g_file_query_exists (file, NULL);
+	}
+
+	return valid;
+}
 
 GList *
 tracker_cli_get_error_keyfiles (void)
@@ -101,8 +118,11 @@ tracker_cli_get_error_keyfiles (void)
 		keyfile = g_key_file_new ();
 
 		if (g_key_file_load_from_file (keyfile, path, 0, &error)) {
-			keyfiles = g_list_prepend (keyfiles, keyfile);
-
+			if (validate_keyfile (keyfile)) {
+				keyfiles = g_list_prepend (keyfiles, keyfile);
+			} else if (g_unlink (path) < 0) {
+				g_warning ("Could not delete stale report %s: %m", path);
+			}
 		} else {
 			g_warning ("Error retrieving keyfiles: %s", error->message);
 			g_error_free (error);
@@ -157,11 +177,6 @@ tracker_cli_print_errors (GList    *keyfiles,
 		keyfile = l->data;
 		uri = g_key_file_get_string (keyfile, GROUP, KEY_URI, NULL);
 		file = g_file_new_for_uri (uri);
-
-		if (!g_file_query_exists (file, NULL)) {
-			tracker_error_report_delete (file);
-			continue;
-		}
 
 		if (file_matches (file, terms)) {
 			gchar *sparql = g_key_file_get_string (keyfile, GROUP, KEY_SPARQL, NULL);
